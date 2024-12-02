@@ -5,23 +5,40 @@ import kotlin.math.abs
 
 class Day01(rawInput: String) : Puzzle(rawInput) {
     override fun partOne(): String {
-        val (first, second) = lines().toIntLists()
-        val diff = first.indices.sumOf { i -> abs(first[i] - second[i]) }
-        return diff.toString()
+        return lines()
+            .toIntListPair()
+            .sorted()
+            .zipped()
+            .sumOf { (a, b) -> abs(a - b) }
+            .toString()
     }
+
 
     override fun partTwo(): String {
-        val (first, second) = lines().toIntLists()
-        val secondFreq = second.groupingBy { it }.eachCount()
-        val score = first.sumOf { firstInt -> firstInt * (secondFreq.getOrDefault(firstInt, 0)) }
-        return score.toString()
+        val (numbers, counts) = lines().toIntListPair().run { first to second.toCounts() }
+        return numbers.sumOf { counts.similarityScore(it) }.toString()
     }
 
-    private fun List<String>.toIntLists(): Pair<List<Int>, List<Int>> =
-        fold(mutableListOf<Int>() to mutableListOf<Int>()) { (firstList, secondList), line ->
-            val (first, second) = line.split("\\s+".toRegex()).map { it.toInt() }
-            firstList.add(first)
-            secondList.add(second)
-            firstList to secondList
-        }.let { it.first.sorted() to it.second.sorted() }
+    private fun Pair<List<Int>, List<Int>>.sorted() =
+        first.sorted() to second.sorted()
+
+    private fun Pair<List<Int>, List<Int>>.zipped() = first.zip(second)
+
+    private fun List<Int>.toCounts() = groupingBy { it }.eachCount()
+
+    private fun Map<Int, Int>.similarityScore(value: Int) = value * getOrDefault(value, 0)
+
+    private fun List<String>.toIntListPair() = map { it.toIntPair() }.unzip()
+
+    private fun String.toIntPair() =
+        splitOnWhitespace()
+            .map { it.toInt() }
+            .let { it[0] to it[1] }
+
+    private fun String.splitOnWhitespace() = split("""\s+""".toRegex())
+
 }
+
+
+
+
