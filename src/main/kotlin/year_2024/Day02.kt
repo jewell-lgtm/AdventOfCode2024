@@ -23,7 +23,7 @@ class Day02(rawInput: String) : Puzzle(rawInput) {
     private fun <E> List<E>.until(index: Int) = subList(0, index)
 
     private fun List<Int>.isSafe(): Boolean = diffs()
-        .all { it in 1..3 } || diffs().all { it in -3..-1 }
+        .let { all { it in 1..3 } || all { it in -3..-1 } }
 
     private fun List<Int>.diffs() = zipWithNext().map { (first, second) -> first - second }
 }
