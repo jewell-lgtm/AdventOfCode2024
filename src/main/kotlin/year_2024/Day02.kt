@@ -4,43 +4,27 @@ import Puzzle
 
 class Day02(rawInput: String) : Puzzle(rawInput) {
     override fun partOne(): String {
-        val reports = lines().map { it.toIntList() }
-        return reports.count { it.isSafe() }.toString()
+        return reports().count { it.isSafe() }.toString()
     }
 
     override fun partTwo(): String {
-        val reports = lines().map { it.toIntList() }
-        return reports.count { report -> report.permutations().any { it.isSafe() } }.toString()
+        return reports().count { report -> report.permutations().any { it.isSafe() } }.toString()
     }
 
-    private fun <E> List<E>.permutations() = sequence {
-        yield(this@permutations)
-        yieldAll(indices.asSequence().map { copyWithoutIndex(it) })
-    }
-
-    private fun <E> List<E>.copyWithoutIndex(index: Int): List<E> {
-        if (index < 0) return emptyList()
-        val newList = toMutableList()
-        newList.removeAt(index)
-        return newList
-    }
-
+    private fun reports() = lines().map { it.toIntList() }
 
     private fun String.toIntList() = split(" ").map { it.toInt() }
 
-    private val negativeLevels = setOf(-3, -2, -1)
-    private val positiveLevels = setOf(1, 2, 3)
+    private fun <E> List<E>.permutations() =
+        indices.asSequence().map { index -> until(index) + after(index) }
 
-    private fun List<Int>.isSafe(): Boolean {
-        val allowedLevels = (positiveLevels + negativeLevels).toMutableSet()
+    private fun <E> List<E>.after(index: Int) = slice(index + 1 until size)
 
-        return zipWithNext().all { (first, second) ->
-            val diff = first - second
-            if (diff !in allowedLevels) return false
-            if (diff in positiveLevels) allowedLevels.removeAll(negativeLevels)
-            if (diff in negativeLevels) allowedLevels.removeAll(positiveLevels)
-            true
-        }
-    }
+    private fun <E> List<E>.until(index: Int) = slice(0 until index)
+
+    private fun List<Int>.isSafe(): Boolean = diffs()
+        .all { it in 1..3 } || diffs().all { it in -3..-1 }
+
+    private fun List<Int>.diffs() = zipWithNext().map { (first, second) -> first - second }
 }
 
