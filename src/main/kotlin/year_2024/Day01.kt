@@ -13,7 +13,7 @@ class Day01(rawInput: String) : Puzzle(rawInput) {
     override fun partTwo(): String {
         val (first, second) = lines().toIntLists()
         val secondFreq = second.groupingBy { it }.eachCount()
-        val score = first.sumOf { firstInt -> firstInt * (secondFreq[firstInt] ?: 0) }
+        val score = first.sumOf { firstInt -> firstInt * (secondFreq.getOrDefault(firstInt, 0)) }
         return score.toString()
     }
 
