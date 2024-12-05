@@ -4,121 +4,76 @@ import Puzzle
 
 class Day05(rawInput: String) : Puzzle(rawInput) {
     override fun partOne(): String {
-        val (mustAppearBefore, mustAppearAfter, pageNumbers) = rawInput.split("\n\n").map { it.trim() }
-            .let { list ->
-                Triple(toBeforeRules(list[0]), toAfterRules(list[0]), toPageNumbers(list[1]))
-            }
+        val pageNumberLists = rawInput.split("\n\n")[1].trim().split("\n")
+            .map { line -> line.split(",").map { it.toInt() } }
 
         var result = 0
-        for (numbers in pageNumbers) {
-            val isOkay = numbers.filterIndexed() { index, number ->
-                isNumberViolation(
-                    number,
-                    numbers.subList(0, index),
-                    numbers.subList(index + 1, numbers.size),
-                    mustAppearBefore,
-                    mustAppearAfter
-                )
-            }.isEmpty()
-            if (isOkay) result += numbers.getAtMiddle()
+        for (numbers in pageNumberLists) {
+            if (areAllNumbersValid(numbers)) {
+                val middle = numbers.getAtMiddle()
+                result += middle
+            }
         }
 
         return result.toString()
     }
 
-    private fun anyNumberViolation(
-        numbers: List<Int>,
-        mustAppearBefore: Map<Int, List<Int>>,
-        mustAppearAfter: Map<Int, List<Int>>
-    ): Boolean {
-        numbers.forEachIndexed { index, number ->
-            if (isNumberViolation(
-                    number,
-                    numbers.subList(0, index),
-                    numbers.subList(index + 1, numbers.size),
-                    mustAppearBefore,
-                    mustAppearAfter
-                )
-            ) return true
-        }
-        return false
-    }
-
-    private fun isNumberViolation(
-        number: Int,
-        before: List<Int>,
-        after: List<Int>,
-        rulesBefore: Map<Int, List<Int>>,
-        rulesAfter: Map<Int, List<Int>>
-    ): Boolean {
-        for (rule in rulesBefore[number] ?: emptyList()) {
-            if (after.contains(rule)) return true
-        }
-        for (rule in rulesAfter[number] ?: emptyList()) {
-            if (before.contains(rule)) return true
-        }
-        return false
-    }
-
-
     override fun partTwo(): String {
-        val (mustAppearBefore, mustAppearAfter, pageNumbers) = rawInput.split("\n\n").map { it.trim() }
-            .let { list ->
-                Triple(toBeforeRules(list[0]), toAfterRules(list[0]), toPageNumbers(list[1]))
-            }
+        val pageNumberLists = rawInput.split("\n\n")[1].trim().split("\n")
+            .map { line -> line.split(",").map { it.toInt() } }
+
 
         var result = 0
-
-        for (numbersList in pageNumbers.map { it.toMutableList() }) {
-            if (!anyNumberViolation(
-                    numbersList,
-                    mustAppearBefore,
-                    mustAppearAfter
-                )
-            ) continue
-
-            // cursed sorting algo
+        for (numbers in pageNumberLists.map { it.toMutableList() }) {
+            if (areAllNumbersValid(numbers)) continue
             var i = 0
-            while (i < numbersList.size) {
-                val sublistBefore = numbersList.subList(0, i).toSet()
-                val mustAppearAfterNumber = mustAppearAfter[numbersList[i]].orEmpty().toSet()
-                val violations = sublistBefore.intersect(mustAppearAfterNumber)
+            while (i < numbers.size) {
+                val number = numbers[i]
+                val numbersBefore = numbers.subList(0, i).toSet()
+                val numbersMustAppearAfter = mustAppearAfter[number].orEmpty().toSet()
+                val violations = numbersBefore.intersect(numbersMustAppearAfter)
                 if (violations.isNotEmpty()) {
-                    numbersList.swapAtIndices(i, i - 1)
+                    numbers.swapAtIndices(i, i - 1)
                     i--
                 } else {
                     i++
                 }
             }
 
-
-            val middleIndex = numbersList.getAtMiddle()
-            result += middleIndex
+            val middle = numbers.getAtMiddle()
+            result += middle
         }
-
 
         return result.toString()
     }
+
+    private val mustAppearAfter = rawInput.split("\n\n")[0].split("\n")
+        .map { it.split("|") }
+        .groupBy({ it[0].toInt() }, { it[1].toInt() })
+
+    private fun areAllNumbersValid(
+        numbers: List<Int>
+    ): Boolean {
+        numbers.forEachIndexed { i, number ->
+            val numbersBefore = numbers.subList(0, i).toSet()
+            val numbersMustAppearAfter = mustAppearAfter[number].orEmpty().toSet()
+            val violations = numbersBefore.intersect(numbersMustAppearAfter)
+            if (violations.isNotEmpty()) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun <E> List<E>.getAtMiddle(): E {
+        val middle = this.size.floorDiv(2)
+        return this[middle]
+    }
+
+
+    private fun <E> MutableList<E>.swapAtIndices(x: Int, y: Int) {
+        val temp = this[x]
+        this[x] = this[y]
+        this[y] = temp
+    }
 }
-
-private fun <E> MutableList<E>.swapAtIndices(i: Int, i2: Int) {
-    val temp = this[i2]
-    this[i2] = this[i]
-    this[i] = temp
-}
-
-private fun <E> List<E>.getAtMiddle(): E {
-    val middle = this.size.floorDiv(2)
-    return this[middle]
-}
-
-private fun toBeforeRules(input: String) = input.split("\n")
-    .map { line -> line.split("|") }
-    .groupBy({ it[1].toInt() }, { it[0].toInt() })
-
-private fun toAfterRules(input: String) = input.split("\n")
-    .map { line -> line.split("|") }
-    .groupBy({ it[0].toInt() }, { it[1].toInt() })
-
-private fun toPageNumbers(input: String) = input.split("\n")
-    .map { line -> line.split(",").map { it.toInt() } }
