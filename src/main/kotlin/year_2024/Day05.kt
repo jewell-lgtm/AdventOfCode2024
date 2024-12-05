@@ -26,11 +26,13 @@ class Day05(rawInput: String) : Puzzle(rawInput) {
         var result = 0
         for (numbers in pageNumberLists.map { it.toMutableList() }) {
             if (areAllNumbersValid(numbers)) continue
+
+            // cursed sorting algorithm
             var i = 0
             while (i < numbers.size) {
                 val number = numbers[i]
                 val numbersBefore = numbers.subList(0, i).toSet()
-                val numbersMustAppearAfter = mustAppearAfter[number].orEmpty().toSet()
+                val numbersMustAppearAfter = mustAppearAfter[number].orEmpty()
                 val violations = numbersBefore.intersect(numbersMustAppearAfter)
                 if (violations.isNotEmpty()) {
                     numbers.swapAtIndices(i, i - 1)
@@ -50,13 +52,14 @@ class Day05(rawInput: String) : Puzzle(rawInput) {
     private val mustAppearAfter = rawInput.split("\n\n")[0].split("\n")
         .map { it.split("|") }
         .groupBy({ it[0].toInt() }, { it[1].toInt() })
+        .mapValues { it.value.toSet() }
 
     private fun areAllNumbersValid(
         numbers: List<Int>
     ): Boolean {
         numbers.forEachIndexed { i, number ->
             val numbersBefore = numbers.subList(0, i).toSet()
-            val numbersMustAppearAfter = mustAppearAfter[number].orEmpty().toSet()
+            val numbersMustAppearAfter = mustAppearAfter[number].orEmpty()
             val violations = numbersBefore.intersect(numbersMustAppearAfter)
             if (violations.isNotEmpty()) {
                 return false
