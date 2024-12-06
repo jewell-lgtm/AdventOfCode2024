@@ -3,109 +3,95 @@ package year_2024
 import Puzzle
 
 class Day06(rawInput: String) : Puzzle(rawInput) {
+    val grid = lines().map { it.toList() }
 
     override fun partOne(): String {
-        val grid = lines().map { it.toMutableList() }
-        val steps = completeWalk(grid, grid.findGuard())
-        return steps.distinctBy { it.x to it.y }.size.toString()
+        val guard = grid.scan('^')?.toGuard(Direction.N) ?: error("No guard found")
+        val seen = mutableSetOf<Position>()
+        while (true) {
+            seen.add(guard.pos)
+            val next = guard.pos + guard.dir
+            if (isOutOfBounds(next)) break
+            if (grid[next] == '#') guard.dir = guard.dir.rotate()
+            else guard.pos = next
+        }
+        return seen.size.toString()
     }
 
     override fun partTwo(): String {
-        val initialGuard = lines().map { it.toList() }.findGuard()
+        var cycles = 0
+        for (grid in allGrids()) {
+            val guard = grid.scan('^')?.toGuard(Direction.N) ?: error("No guard found")
+            val seen = mutableSetOf<Pair<Position, Direction>>()
+            while (true) {
+                seen.add(guard.pos to guard.dir)
+                val next = guard.pos + guard.dir
+                if (isOutOfBounds(next)) break
+                if (grid[next] == '#') guard.dir = guard.dir.rotate()
+                else guard.pos = next
 
-        // very dumb, very slow, but it works
-        var result = 0
-        for (y in yIndices) {
-            println("y {$y} in {${yIndices.last()}}")
-            for (x in xIndices) {
-                val newGrid = lines().map { it.toMutableList() }.apply {
-                    this[y][x] = '#'
-                }
-                val takenSteps = completeWalk(newGrid, initialGuard)
-                if (takenSteps.containsDuplicate()) {
-                    result++
-                }
-            }
-        }
-        return result.toString()
-    }
-
-    private fun completeWalk(
-        grid: List<MutableList<Char>>,
-        guard: Guard
-    ): List<Guard> {
-        var mutableGuard = guard
-        grid[mutableGuard.y][mutableGuard.x] = 'X'
-        val steps = mutableListOf(mutableGuard)
-        while (mutableGuard.nextStepDoesNotExitMap()) {
-            mutableGuard = mutableGuard.walk(grid)
-            // cycle detected
-            if (steps.contains(mutableGuard)) {
-                steps.add(mutableGuard)
-                break
-            }
-            steps.add(mutableGuard)
-        }
-
-        return steps
-    }
-
-
-    private enum class Direction(val dx: Int, val dy: Int) {
-        N(0, -1), E(1, 0), S(0, 1), W(-1, 0);
-    }
-
-    private data class Guard(val direction: Direction, val x: Int, val y: Int)
-
-    private fun Guard.walk(grid: List<MutableList<Char>>): Guard {
-        val nextX = x + direction.dx
-        val nextY = y + direction.dy
-        return if (grid[nextY][nextX] != '#') {
-            Guard(direction, nextX, nextY)
-        } else {
-            Guard(direction.rotate(), x, y)
-        }
-    }
-
-    private val yIndices = lines().indices
-    private val xIndices = lines()[0].indices
-
-    private fun Guard.nextStepDoesNotExitMap(): Boolean {
-        val nextX = x + direction.dx
-        val nextY = y + direction.dy
-        val result = nextY in yIndices && nextX in xIndices
-        return result
-    }
-
-    private fun Direction.rotate() = when (this) {
-        Direction.N -> Direction.E
-        Direction.E -> Direction.S
-        Direction.S -> Direction.W
-        Direction.W -> Direction.N
-    }
-
-    private fun List<List<Char>>.findGuard(): Guard {
-        for (y in indices) {
-            for (x in this[y].indices) {
-                val char = this[y][x]
-                if (char == '^') {
-                    return Guard(Direction.N, x, y)
+                if (seen.contains(guard.pos to guard.dir)) {
+                    cycles++
+                    break
                 }
             }
         }
-        error("No guard found")
+        return cycles.toString()
     }
 
-    private fun <E> List<E>.containsDuplicate(): Boolean {
-        val seen = mutableSetOf<E>()
-        for (element in this) {
-            if (seen.contains(element)) {
-                return true
-            } else {
-                seen.add(element)
+    private fun allGrids() = sequence {
+        for (r in 0 until rows) {
+            for (c in 0 until columns) {
+                if (grid[r][c] == '.') yield(grid.map { it.toMutableList() }.apply { this[r][c] = '#' })
             }
         }
-        return false
     }
 
+
+    private fun List<List<Char>>.debug(): String {
+        return this.joinToString("\n") { row -> row.joinToString("") }
+    }
+
+    private val rows = lines().size
+    private val columns = lines().first().length
+
+    private fun isOutOfBounds(pos: Position) = pos.r < 0 || pos.r >= rows || pos.c < 0 || pos.c >= columns
+
+    private enum class Direction(val dr: Int, val dc: Int) {
+        N(-1, 0), E(0, 1), S(1, 0), W(0, -1);
+    }
+
+    private data class Position(val r: Int, val c: Int)
+    private class Guard(var pos: Position, var dir: Direction)
+
+    // matrices are hard
+    private fun Direction.rotate() =
+        when (this) {
+            Direction.N -> Direction.E
+            Direction.E -> Direction.S
+            Direction.S -> Direction.W
+            Direction.W -> Direction.N
+        }
+
+    private fun Position.toGuard(dir: Direction) = Guard(this, dir)
+
+    private fun List<List<Char>>.scan(char: Char) = positions().firstOrNull { this[it] == char }
+    private operator fun List<List<Char>>.get(at: Position) = this[at.r][at.c]
+    private operator fun List<MutableList<Char>>.set(at: Position, char: Char) {
+        this[at.r][at.c] = char
+    }
+
+    private fun List<List<Char>>.positions() = sequence {
+        for (r in 0 until rows) {
+            for (c in 0 until columns) {
+                yield(Position(r, c))
+            }
+        }
+    }
+
+    private operator fun Position.plus(dir: Direction) = Position(r + dir.dr, c + dir.dc)
 }
+
+
+
+
