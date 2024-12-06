@@ -3,54 +3,54 @@ package year_2024
 import Puzzle
 
 class Day06(rawInput: String) : Puzzle(rawInput) {
-    val grid = lines().map { it.toList() }
+    private val grid = lines().map { it.toList() }
 
     override fun partOne(): String {
         val guard = grid.scan('^')?.toGuard(Direction.N) ?: error("No guard found")
-        val seen = mutableSetOf<Position>()
-        while (true) {
-            seen.add(guard.pos)
-            val next = guard.pos + guard.dir
-            if (isOutOfBounds(next)) break
-            if (grid[next] == '#') guard.dir = guard.dir.rotate()
-            else guard.pos = next
-        }
-        return seen.size.toString()
+        return traverse(grid, guard).seen.toString()
     }
 
     override fun partTwo(): String {
-        var cycles = 0
-        for (grid in allGrids()) {
-            val guard = grid.scan('^')?.toGuard(Direction.N) ?: error("No guard found")
-            val seen = mutableSetOf<Pair<Position, Direction>>()
-            while (true) {
-                seen.add(guard.pos to guard.dir)
-                val next = guard.pos + guard.dir
-                if (isOutOfBounds(next)) break
-                if (grid[next] == '#') guard.dir = guard.dir.rotate()
-                else guard.pos = next
-
-                if (seen.contains(guard.pos to guard.dir)) {
-                    cycles++
-                    break
-                }
+        val timeStarted = System.currentTimeMillis()
+        val guard = grid.scan('^')?.toGuard(Direction.N) ?: error("No guard found")
+        return allGrids().count { traverse(it, guard.copy()).isCycle }
+            .toString()
+            .also {
+                println("Took ${System.currentTimeMillis() - timeStarted}ms")
             }
-        }
-        return cycles.toString()
     }
+
+    private data class TraverseResult(
+        val seen: Int,
+        val isCycle: Boolean,
+    )
+
+    private fun traverse(
+        grid: List<List<Char>>,
+        guard: Guard,
+        seen: MutableSet<Position> = mutableSetOf(),
+        visited: MutableSet<Pair<Position, Direction>> = mutableSetOf(),
+    ): TraverseResult {
+        if (visited.contains(guard.pos to guard.dir)) return TraverseResult(seen.size, true)
+
+        seen.add(guard.pos)
+        visited.add(guard.pos to guard.dir)
+
+        val next = guard.pos + guard.dir
+        if (isOutOfBounds(next)) return TraverseResult(seen.size, false)
+        if (grid[next] == '#') guard.dir = guard.dir.rotate()
+        else guard.pos = next
+
+        return traverse(grid, guard, seen, visited)
+    }
+
 
     private fun allGrids() = sequence {
-        for (r in 0 until rows) {
-            for (c in 0 until columns) {
-                if (grid[r][c] == '.') yield(grid.map { it.toMutableList() }.apply { this[r][c] = '#' })
-            }
+        for (position in positions()) {
+            if (grid[position] == '.') yield(grid.map { it.toMutableList() }.apply { this[position] = '#' })
         }
     }
 
-
-    private fun List<List<Char>>.debug(): String {
-        return this.joinToString("\n") { row -> row.joinToString("") }
-    }
 
     private val rows = lines().size
     private val columns = lines().first().length
@@ -61,9 +61,6 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
         N(-1, 0), E(0, 1), S(1, 0), W(0, -1);
     }
 
-    private data class Position(val r: Int, val c: Int)
-    private class Guard(var pos: Position, var dir: Direction)
-
     // matrices are hard
     private fun Direction.rotate() =
         when (this) {
@@ -73,6 +70,14 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
             Direction.W -> Direction.N
         }
 
+    private data class Position(val r: Int, val c: Int)
+
+    private operator fun Position.plus(dir: Direction) = Position(r + dir.dr, c + dir.dc)
+
+    private class Guard(var pos: Position, var dir: Direction)
+
+    private fun Guard.copy() = Guard(pos, dir)
+
     private fun Position.toGuard(dir: Direction) = Guard(this, dir)
 
     private fun List<List<Char>>.scan(char: Char) = positions().firstOrNull { this[it] == char }
@@ -81,7 +86,7 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
         this[at.r][at.c] = char
     }
 
-    private fun List<List<Char>>.positions() = sequence {
+    private fun positions() = sequence {
         for (r in 0 until rows) {
             for (c in 0 until columns) {
                 yield(Position(r, c))
@@ -89,7 +94,7 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
         }
     }
 
-    private operator fun Position.plus(dir: Direction) = Position(r + dir.dr, c + dir.dc)
+
 }
 
 
