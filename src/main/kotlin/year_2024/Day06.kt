@@ -6,15 +6,48 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
 
     override fun partOne(): String {
         val grid = lines().map { it.toMutableList() }
-        val guard = grid.findGuard()
+        val steps = completeWalk(grid, grid.findGuard())
+        return steps.distinctBy { it.x to it.y }.size.toString()
+    }
 
-        grid[guard.y][guard.x] = 'X'
-        while (guard.nextStepIsNotOffMap()) {
-            guard.walk(grid)
+    override fun partTwo(): String {
+        val initialGuard = lines().map { it.toList() }.findGuard()
+
+        // very dumb, very slow, but it works
+        var result = 0
+        for (y in yIndices) {
+            println("y {$y} in {${yIndices.last()}}")
+            for (x in xIndices) {
+                val newGrid = lines().map { it.toMutableList() }.apply {
+                    this[y][x] = '#'
+                }
+                val takenSteps = completeWalk(newGrid, initialGuard)
+                if (takenSteps.containsDuplicate()) {
+                    result++
+                }
+            }
+        }
+        return result.toString()
+    }
+
+    private fun completeWalk(
+        grid: List<MutableList<Char>>,
+        guard: Guard
+    ): List<Guard> {
+        var mutableGuard = guard
+        grid[mutableGuard.y][mutableGuard.x] = 'X'
+        val steps = mutableListOf(mutableGuard)
+        while (mutableGuard.nextStepDoesNotExitMap()) {
+            mutableGuard = mutableGuard.walk(grid)
+            // cycle detected
+            if (steps.contains(mutableGuard)) {
+                steps.add(mutableGuard)
+                break
+            }
+            steps.add(mutableGuard)
         }
 
-        return grid.flatten().count { it == 'X' }.toString()
-
+        return steps
     }
 
 
@@ -22,37 +55,33 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
         N(0, -1), E(1, 0), S(0, 1), W(-1, 0);
     }
 
-    private data class Guard(var direction: Direction, var x: Int, var y: Int)
+    private data class Guard(val direction: Direction, val x: Int, val y: Int)
 
-    private fun Guard.walk(grid: List<MutableList<Char>>) {
+    private fun Guard.walk(grid: List<MutableList<Char>>): Guard {
         val nextX = x + direction.dx
         val nextY = y + direction.dy
-        if (grid[nextY][nextX] != '#') {
-            x = nextX
-            y = nextY
-            grid[y][x] = 'X'
-
-
+        return if (grid[nextY][nextX] != '#') {
+            Guard(direction, nextX, nextY)
         } else {
-            rotate()
+            Guard(direction.rotate(), x, y)
         }
     }
 
-    private fun Guard.nextStepIsNotOffMap(): Boolean {
+    private val yIndices = lines().indices
+    private val xIndices = lines()[0].indices
+
+    private fun Guard.nextStepDoesNotExitMap(): Boolean {
         val nextX = x + direction.dx
         val nextY = y + direction.dy
-        val result = nextY in lines().indices && nextX in lines()[nextY].indices
-
+        val result = nextY in yIndices && nextX in xIndices
         return result
     }
 
-    private fun Guard.rotate() {
-        direction = when (direction) {
-            Direction.N -> Direction.E
-            Direction.E -> Direction.S
-            Direction.S -> Direction.W
-            Direction.W -> Direction.N
-        }
+    private fun Direction.rotate() = when (this) {
+        Direction.N -> Direction.E
+        Direction.E -> Direction.S
+        Direction.S -> Direction.W
+        Direction.W -> Direction.N
     }
 
     private fun List<List<Char>>.findGuard(): Guard {
@@ -67,7 +96,16 @@ class Day06(rawInput: String) : Puzzle(rawInput) {
         error("No guard found")
     }
 
-    override fun partTwo(): String {
-        return "TODO"
+    private fun <E> List<E>.containsDuplicate(): Boolean {
+        val seen = mutableSetOf<E>()
+        for (element in this) {
+            if (seen.contains(element)) {
+                return true
+            } else {
+                seen.add(element)
+            }
+        }
+        return false
     }
+
 }
