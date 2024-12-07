@@ -11,15 +11,14 @@ class Day07(rawInput: String) : Puzzle(rawInput) {
         }
 
     override fun partOne(): String {
-
-
         var result = BigInteger.ZERO
+        val operations = listOf<(BigInteger, BigInteger) -> BigInteger>(
+            { a, b -> a + b },
+            { a, b -> a * b },
+        )
         for ((target, numbers) in input) {
             if (results(
-                    operations = listOf(
-                        { a, b -> a + b },
-                        { a, b -> a * b },
-                    ), numbers = numbers
+                    operations, numbers
                 ).any { it == target }
             ) result += target
         }
@@ -27,15 +26,15 @@ class Day07(rawInput: String) : Puzzle(rawInput) {
     }
 
     override fun partTwo(): String {
-
         var result = BigInteger.ZERO
+        val operations = listOf<(BigInteger, BigInteger) -> BigInteger>(
+            { a, b -> a + b },
+            { a, b -> a * b },
+            { a, b -> (a.toString() + b.toString()).toBigInteger() }
+        )
         for ((target, numbers) in input) {
             if (results(
-                    operations = listOf(
-                        { a, b -> a + b },
-                        { a, b -> a * b },
-                        { a, b -> (a.toString() + b.toString()).toBigInteger() }
-                    ), numbers = numbers
+                    operations, numbers
                 ).any { it == target }
             ) result += target
         }
@@ -44,14 +43,14 @@ class Day07(rawInput: String) : Puzzle(rawInput) {
 
     private fun results(
         operations: List<(BigInteger, BigInteger) -> BigInteger>,
-        results: List<BigInteger> = listOf(),
-        numbers: List<BigInteger>
+        numbers: List<BigInteger>,
+        results: List<BigInteger> = listOf()
     ): List<BigInteger> {
         if (numbers.isEmpty()) return results
-        if (results.isEmpty()) return results(operations, listOf(numbers.first()), numbers.drop(1))
+        if (results.isEmpty()) return results(operations, numbers.drop(1), listOf(numbers.first()))
         val number = numbers.first()
         val newResults = results.flatMap { result -> operations.map { operation -> operation(result, number) } }
-        return results(operations, newResults, numbers.drop(1))
+        return results(operations, numbers.drop(1), newResults)
     }
 
 
