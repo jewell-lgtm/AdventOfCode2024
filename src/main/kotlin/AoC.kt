@@ -13,8 +13,10 @@ fun main(args: Array<String>) {
     val puzzleClass = Class.forName("year_$year.Day$day").asSubclass(Puzzle::class.java)
     val instance = puzzleClass.getConstructor(String::class.java).newInstance(input)
 
-    println("Part One: " + instance.partOne())
-    println("Part Two: " + instance.partTwo())
+    var timeStarted = System.currentTimeMillis()
+    println("Part One: ${instance.partOne()} (in ${System.currentTimeMillis() - timeStarted}ms)")
+    timeStarted = System.currentTimeMillis()
+    println("Part Two: ${instance.partTwo()} (in ${System.currentTimeMillis() - timeStarted}ms)")
 }
 
 private fun getYear() = dotenv.get("YEAR")?.toInt() ?: 2024
