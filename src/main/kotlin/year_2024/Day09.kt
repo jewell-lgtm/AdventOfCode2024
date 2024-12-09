@@ -3,51 +3,51 @@ package year_2024
 import Puzzle
 import java.math.BigInteger
 
-
 class Day09(rawInput: String) : Puzzle(rawInput) {
+
+    sealed interface DiskBlock {
+        fun isEmpty() = this is EmptyBlock
+        fun read(): BigInteger = when (this) {
+            is DataBlock -> this.data
+            is EmptyBlock -> error("reading an empty block")
+        }
+    }
+    data class DataBlock(val data: BigInteger) : DiskBlock {
+        override fun toString() = data.toString()
+    }
+    data object EmptyBlock : DiskBlock {
+        override fun toString() = "."
+    }
+
     override fun partOne(): String {
-        var toggle = false
-        val result = mutableListOf<Char>()
-        val positionFreeSpace = mutableListOf<Int>()
-        var fileId = 0L
-        for (number in rawInput.trim().map { it.toString().toInt() }) {
-            toggle = !toggle
-            if (toggle) {
-                for (i in 0 until number) {
-                    result.add(fileId.toString()[0])
-                }
-                fileId++
+        val disk = mutableListOf<DiskBlock>()
+        var id = BigInteger.ZERO
+        for ((index, char) in chars().withIndex()) {
+            val x = char.toString().toInt()
+            if (index % 2 == 0) {
+                disk.addAll(List(size = x) { DataBlock(id) })
+                id++
             } else {
-                for (i in 0 until number) {
-                    positionFreeSpace.add(result.size)
-                    result.add('.')
-                }
+                disk.addAll(List(size = x) { EmptyBlock })
             }
         }
+        val blanks = disk.withIndex().filter { it.value.isEmpty() }.map { it.index }
 
-//        while (result.contains('.')) {
-//            val last = result.removeLast()
-//            if (last == '.') continue
-//            val index = result.indexOfFirst { it == '.' }
-//            result[index] = last
-//        }
-
-        while (positionFreeSpace.isNotEmpty() && positionFreeSpace.first() < result.size) {
-            val char = result.removeLast()
-            if (char == '.') continue
-            val position = positionFreeSpace.removeFirst()
-            if (result[position] != '.') error("Something went wrong")
-            result[position] = char
+        for (pos in blanks) {
+            while (disk.last() == EmptyBlock) disk.removeLast()
+            if (pos >= disk.size) break
+            if (disk[pos] != EmptyBlock) error("Data corruption!")
+            disk[pos] = disk.removeLast()
         }
 
-        val sum = result.foldIndexed(BigInteger.ZERO) { index, acc, char ->
-            acc + if (char == '.') BigInteger.ZERO else index.toBigInteger() * char.toString().toBigInteger()
-        }
+        val result = disk.withIndex().sumOf { (it.value.read()) * it.index.toBigInteger() }
 
-        return sum.toString()
+        return result.toString()
     }
 
     override fun partTwo(): String {
         return "TODO"
     }
+
+
 }
