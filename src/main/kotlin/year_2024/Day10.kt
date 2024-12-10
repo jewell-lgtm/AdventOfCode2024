@@ -9,15 +9,15 @@ class Day10(rawInput: String) : Puzzle(rawInput) {
     var sum = 0
     for (start in grid.findAll(0)) {
       val found = mutableSetOf<Position>()
-      val queue = mutableListOf(PuzzleState(0, start))
+      val queue = mutableListOf(start)
       while (queue.isNotEmpty()) {
-        val state = queue.removeFirst()
-        if (grid[state.position] == 9) {
-          found.add(state.position)
+        val position = queue.removeFirst()
+        if (grid[position] == 9) {
+          found.add(position)
           continue
         }
-        val next = state.position.neighbors().filter { grid[it] == grid[state.position] + 1 }
-        queue.addAll(next.map { PuzzleState(grid[it], it) })
+        val next = position.neighbors().filter { neighbor -> grid[neighbor] == grid[position] + 1 }
+        queue.addAll(next)
       }
 
       sum += found.size
@@ -30,15 +30,15 @@ class Day10(rawInput: String) : Puzzle(rawInput) {
     val grid = cells().map { it.digitToIntOrNull() ?: -1 }
     var sum = 0
     for (start in grid.findAll(0)) {
-      val queue = mutableListOf(PuzzleState(0, start))
+      val queue = mutableListOf(start)
       while (queue.isNotEmpty()) {
-        val state = queue.removeFirst()
-        if (grid[state.position] == 9) {
+        val position = queue.removeFirst()
+        if (grid[position] == 9) {
           sum++
           continue
         }
-        val next = state.position.neighbors().filter { grid[it] == grid[state.position] + 1 }
-        queue.addAll(next.map { PuzzleState(grid[it], it) })
+        val next = position.neighbors().filter { neighbor -> grid[neighbor] == grid[position] + 1 }
+        queue.addAll(next)
       }
     }
 
@@ -63,8 +63,6 @@ class Day10(rawInput: String) : Puzzle(rawInput) {
     Direction.entries.mapNotNull { dir ->
       Position(r + dir.dr, c + dir.dc).takeIf { it.isValid() }
     }
-
-  private data class PuzzleState(val currValue: Int, val position: Position)
 
   private data class Grid2d<E>(val input: List<List<E>>)
 
