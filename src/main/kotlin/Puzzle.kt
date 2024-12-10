@@ -4,4 +4,7 @@ abstract class Puzzle(val rawInput: String) {
 
     fun chars() = rawInput.trim().toCharArray().toList()
     fun lines() = rawInput.trim().lines()
+
+
 }
+
