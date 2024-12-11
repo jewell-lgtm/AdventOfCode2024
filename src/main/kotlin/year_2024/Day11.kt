@@ -15,20 +15,18 @@ class Day11(rawInput: String) : Puzzle(rawInput) {
     return stones.sumOf { solveStone(it, 75) }.toString()
   }
 
-  private val memo = mutableMapOf<Pair<Int, Long>, Long>()
+  private val memo = mutableMapOf<Int, MutableMap<Long, Long>>()
 
   private fun solveStone(stone: Long, depth: Int) =
-    memo.getOrPut(depth to stone) { solvePart(stone, depth) }
+    memo.getOrPut(depth) { mutableMapOf() }.getOrPut(stone) { solvePart(stone, depth) }
 
   private fun solvePart(stone: Long, depth: Int): Long {
     if (depth == 0) return 1L
     if (stone == 0L) return solveStone(1L, depth - 1)
     val strVal = stone.toString()
-    if (strVal.length % 2 == 0) {
-      val lhs = strVal.substring(0, strVal.length / 2)
-      val rhs = strVal.substring(strVal.length / 2)
-      return solveStone(lhs.toLong(), depth - 1) + solveStone(rhs.toLong(), depth - 1)
-    }
-    return solveStone(stone * 2024L, depth - 1)
+    if (strVal.length % 2 != 0) return solveStone(stone * 2024L, depth - 1)
+    val lhs = strVal.substring(0, strVal.length / 2)
+    val rhs = strVal.substring(strVal.length / 2)
+    return solveStone(lhs.toLong(), depth - 1) + solveStone(rhs.toLong(), depth - 1)
   }
 }
